@@ -51,8 +51,8 @@ def main():
     frameMax = 500
 
     # Set path to source file
-    fname = "C0108x.mp4"
-    fileSource = os.path.expanduser(f"~/{fname}")
+    fname = "C0108x"
+    fileSource = os.path.expanduser(f"~/{fname}.mp4")
     
     # Set path to video file in which processed video will be saved
     fileTarget = os.path.expanduser(f"~/{fname}-output.mp4")
