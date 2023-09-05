@@ -1,5 +1,6 @@
-from ultralytics import YOLO 
+import os
 import cv2 
+from ultralytics import YOLO 
 
 
 def boxCenter(coords):
@@ -45,16 +46,23 @@ def adjustBoundaries(coords, screen):
 
 
 def main():
-    model = YOLO("yolov8s.pt")  # load a pretrained model
+    # Set path to source file
+    fname = "C0108x.mp4"
+    fileSource = os.path.expanduser(f"~/{fname}")
+    
+    # Set path to video file in which processed video will be saved
+    fileTarget = os.path.expanduser("~/{fname}-output.mp4")
 
-    fileSource = "test_video.mp4"  # this is the source file we will process
-    fileTarget = "test_vide0_processed.mp4"  # this is the file path where processed video will be saved
+    # Load pre-trained model
+    model = YOLO("yolov8s.pt")
+
+    # coordinates of the cropping box we will start with, this cropping box will follow our object
     cropCoords = [
         100,
         100,
         500,
         500,
-    ]  # coordinates of the cropping box we will start with, this cropping box will follow our object
+    ]
 
     vidCapture = cv2.VideoCapture(fileSource)
     fps = vidCapture.get(cv2.CAP_PROP_FPS)
