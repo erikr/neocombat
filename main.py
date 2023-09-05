@@ -48,7 +48,7 @@ def adjustBoundaries(coords, screen):
 
 def main():
     # Set maximum number of input frames to process to speed up development
-    frameMax = 500
+    frameMax = 999999
 
     # Set path to source file
     fname = "C0108x"
