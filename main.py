@@ -1,5 +1,5 @@
-from ultralytics import YOLO  # import our machine learning model
-import cv2  # import OpenCV
+from ultralytics import YOLO 
+import cv2 
 
 
 def boxCenter(coords):
@@ -124,3 +124,9 @@ def main():
     # Close input and output video streams
     vidCapture.release()
     outputWriter.release()
+
+
+if __main__ == "__main__":
+    # main()
+
+    print("Successfully ran main.py! Exiting.")
