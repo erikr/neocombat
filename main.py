@@ -105,32 +105,32 @@ def main():
         print(f"Frame {frameCounter:.0f} / {totalFrames:.0f} ({fractionComplete * 100:.1f}%)")
         frameCounter = frameCounter + 1
 
-    # request for the YOLO model to find objects, you can see the documentation on the YOLO model for params
-    results = model.predict(source=im, conf=0.5, iou=0.1)
+        # request for the YOLO model to find objects, you can see the documentation on the YOLO model for params
+        results = model.predict(source=im, conf=0.5, iou=0.1)
 
-    # boxes are coordinates of objects YOLO has found
-    boxes = results[0].boxes
-    
-    # returns the best box - closest to the last one
-    box = closestBox(boxes, lastBoxCoords)
-    
-    # converts the PyTorch Tensor into box coordinates and saves for the next iteration
-    lastBoxCoords = (box.xyxy[0].numpy().astype(int))
+        # boxes are coordinates of objects YOLO has found
+        boxes = results[0].boxes
+        
+        # returns the best box - closest to the last one
+        box = closestBox(boxes, lastBoxCoords)
+        
+        # converts the PyTorch Tensor into box coordinates and saves for the next iteration
+        lastBoxCoords = (box.xyxy[0].numpy().astype(int))
 
-    # Crop the image around the object
-    
-    # since the area YOLO has found for the object depends on the object but not on the cropping area we need to convert the area of the object to the cropping area
-    newCoords = adjustBoxSize(box.xyxy[0].numpy().astype(int), box_width, box_height)
+        # Crop the image around the object
+        
+        # since the area YOLO has found for the object depends on the object but not on the cropping area we need to convert the area of the object to the cropping area
+        newCoords = adjustBoxSize(box.xyxy[0].numpy().astype(int), box_width, box_height)
 
-    # don't allow to get the cropping area go out of video screen edges
-    newCoords = adjustBoundaries(newCoords, [width, height])
-    [box_left, box_top, box_right, box_bottom] = newCoords
-    imCropped = im[box_top:box_bottom, box_left:box_right]  # cropping the image
+        # don't allow to get the cropping area go out of video screen edges
+        newCoords = adjustBoundaries(newCoords, [width, height])
+        [box_left, box_top, box_right, box_bottom] = newCoords
+        imCropped = im[box_top:box_bottom, box_left:box_right]  # cropping the image
 
-    # Add the cropped image to the output video stream
-    
-    # writing the cropped image as the new frame into the output video stream
-    outputWriter.write(imCropped)
+        # Add the cropped image to the output video stream
+        
+        # writing the cropped image as the new frame into the output video stream
+        outputWriter.write(imCropped)
 
     # Close input and output video streams
     vidCapture.release()
