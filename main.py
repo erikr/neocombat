@@ -55,7 +55,7 @@ def main():
     fileSource = os.path.expanduser(f"~/{fname}")
     
     # Set path to video file in which processed video will be saved
-    fileTarget = os.path.expanduser("~/{fname}-output.mp4")
+    fileTarget = os.path.expanduser(f"~/{fname}-output.mp4")
 
     # Load pre-trained model
     model = YOLO("yolov8s.pt")
