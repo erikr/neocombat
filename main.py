@@ -97,10 +97,10 @@ def main():
 
     # Read a frame from the input video stream as an image. Read the next frame from the input video stream until the end of the video.
     frameCounter = 1
-    while True or frameCounter < frameMax:
+    while True:
         r, im = vidCapture.read()
 
-        if not r:
+        if not r or frameCounter >= frameMax:
             print("Video Finished!")
             break
 
