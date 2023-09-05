@@ -126,7 +126,7 @@ def main():
     outputWriter.release()
 
 
-if __main__ == "__main__":
+if __name__ == "__main__":
     # main()
 
     print("Successfully ran main.py! Exiting.")
