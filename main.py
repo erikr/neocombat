@@ -1,5 +1,6 @@
 import os
 import cv2 
+import math
 from ultralytics import YOLO 
 
 
@@ -100,7 +101,8 @@ def main():
             print("Video Finished!")
             break
 
-        print("Frame: " + str(frameCounter))
+        fractionComplete = frameCounter / totalFrames
+        print(f"Frame {frameCounter} / {totalFrames} ({fractionComplete:.1f})"
         frameCounter = frameCounter + 1
 
     results = model.predict(
@@ -135,6 +137,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
-
-    print("Successfully ran main.py! Exiting.")
+    main()
+    print("Code successful. Exiting.")
