@@ -47,6 +47,9 @@ def adjustBoundaries(coords, screen):
 
 
 def main():
+    # Set maximum number of input frames to process to speed up development
+    frameMax = 100
+
     # Set path to source file
     fname = "C0108x.mp4"
     fileSource = os.path.expanduser(f"~/{fname}")
@@ -94,7 +97,7 @@ def main():
 
     # Read a frame from the input video stream as an image. Read the next frame from the input video stream until the end of the video.
     frameCounter = 1
-    while True:
+    while True or frameCounter < frameMax:
         r, im = vidCapture.read()
 
         if not r:
