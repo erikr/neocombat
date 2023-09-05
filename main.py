@@ -102,7 +102,7 @@ def main():
             break
 
         fractionComplete = frameCounter / totalFrames
-        print(f"Frame {frameCounter} / {totalFrames} ({fractionComplete:.1f})"
+        print(f"Frame {frameCounter} / {totalFrames} ({fractionComplete:.1f})")
         frameCounter = frameCounter + 1
 
     results = model.predict(
