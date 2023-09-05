@@ -1,5 +1,7 @@
 # Setup
 
+This repo contains the code for running the demo described at https://dev.to/irubtsov/object-tracking-and-video-cropping-with-computer-vision-and-machine-learning-3ge2.
+
 1. Install miniconda:
 
     ```bash
