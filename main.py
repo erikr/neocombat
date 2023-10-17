@@ -1,143 +1,132 @@
 import os
-import cv2 
+import sys
+import cv2
 import math
-from ultralytics import YOLO 
+from ultralytics import YOLO
 
 
-def boxCenter(coords):
+def box_center(coords):
     [left, top, right, bottom] = coords
-    return [(left + right) / 2, (top + bottom) / 2]
+    return [(left + right) // 2, (top + bottom) // 2]
 
 
-def closestBox(boxes, coords):
+def closest_box(boxes, coords):
     distance = []
-    center = boxCenter(coords)
+    center = box_center(coords)
     for box in boxes:
-        boxCent = boxCenter(box.xyxy[0].numpy().astype(int))
-        distance.append(math.dist(boxCent, center))
+        box_center_coord = box_center(box.xyxy[0].numpy().astype(int))
+        distance.append(math.dist(box_center_coord, center))
     return boxes[distance.index(min(distance))]
 
 
-def adjustBoxSize(coords, box_width, box_height):
-    [centerX, centerY] = boxCenter(coords)
+def adjust_box_size(coords, box_width, box_height):
+    [center_x, center_y] = box_center(coords)
     return [
-        centerX - box_width / 2,
-        centerY - box_height / 2,
-        centerX + box_width / 2,
-        centerY + box_height / 2,
+        center_x - box_width // 2,
+        center_y - box_height // 2,
+        center_x + box_width // 2,
+        center_y + box_height // 2,
     ]
 
 
-def adjustBoundaries(coords, screen):
+def adjust_boundaries(coords, screen):
     [left, top, right, bottom] = coords
     [width, height] = screen
-    if left < 0:
-        right = right - left
-        left = 0
-    if top < 0:
-        bottom = bottom - top
-        top = 0
-    if right > width:
-        left = left - (right - width)
-        right = width
-    if bottom > height:
-        top = top - (bottom - height)
-        bottom = height
-    return [round(left), round(top), round(right), round(bottom)]
+    left, top, right, bottom = (
+        max(left, 0),
+        max(top, 0),
+        min(right, width),
+        min(bottom, height),
+    )
+    return [int(coord) for coord in [left, top, right, bottom]]
+
+
+def ensure_fixed_crop_dimensions(coords, screen, crop_width, crop_height):
+    [center_x, center_y] = box_center(coords)
+    left = max(0, center_x - crop_width // 2)
+    top = max(0, center_y - crop_height // 2)
+    right = min(screen[0], center_x + crop_width // 2)
+    bottom = min(screen[1], center_y + crop_height // 2)
+    return [int(coord) for coord in [left, top, right, bottom]]
 
 
 def main():
-    # Set maximum number of input frames to process to speed up development
-    frameMax = 999999
-
-    # Set path to source file
+    infer = True
+    frame_start = 1800
+    frame_end = 2100
+    root_dir = os.path.expanduser("~/data")
     fname = "C0108x"
-    fileSource = os.path.expanduser(f"~/{fname}.mp4")
-    
-    # Set path to video file in which processed video will be saved
-    fileTarget = os.path.expanduser(f"~/{fname}-output.mp4")
+    w_i = 0
+    h_i = 0
+    crop_width = 400
+    crop_height = 400
+    crop_coords = [w_i, h_i, w_i + crop_width, h_i + crop_height]
 
-    # Load pre-trained model
+    fpath_video_input = os.path.join(root_dir, f"{fname}.mp4")
+    if not os.path.exists(fpath_video_input):
+        print("Input video file not found.")
+        sys.exit(1)
+
+    ext = "mp4"
+    fpath_video_output = os.path.join(root_dir, f"{fname}-output2.{ext}")
+
     model = YOLO("yolov8s.pt")
 
-    # coordinates of the cropping box we will start with, this cropping box will follow our object
-    cropCoords = [
-        100,
-        100,
-        500,
-        500,
-    ]
+    cap = cv2.VideoCapture(fpath_video_input)
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    vidCapture = cv2.VideoCapture(fileSource)
-    fps = vidCapture.get(cv2.CAP_PROP_FPS)
-    totalFrames = vidCapture.get(cv2.CAP_PROP_FRAME_COUNT)
-    width = int(vidCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(vidCapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    if not cropCoords:
-        [box_left, box_top, box_right, box_bottom] = [0, 0, width, height]
-    else:
-        [box_left, box_top, box_right, box_bottom] = cropCoords
-        if box_left < 0:
-            box_left = 0
-        if box_top < 0:
-            box_top = 0
-        if (box_right) > width:
-            box_right = width
-        if box_bottom > height:
-            box_bottom = height
-    lastCoords = [box_left, box_top, box_right, box_bottom]
-    lastBoxCoords = lastCoords
-    box_width = box_right - box_left
-    box_height = box_bottom - box_top
+    print(f"Video metadata: {fps} fps, {width} width x {height} height")
 
-    # Open an output video stream
-    outputWriter = cv2.VideoWriter(
-        fileTarget, cv2.VideoWriter_fourcc(*"MPEG"), fps, (box_width, box_height)
+    [left, top, right, bottom] = adjust_boundaries(crop_coords, [width, height])
+    last_coords = [left, top, right, bottom]
+    last_box_coords = last_coords
+    box_width = right - left
+    box_height = bottom - top
+
+    if (crop_width > width) or (crop_height > height):
+        raise ValueError("Crop dimensions are greater than the input video dimensions.")
+
+    out = cv2.VideoWriter(
+        fpath_video_output,
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        fps,
+        (crop_width, crop_height),
     )
+    frame_count = 0
 
-    # Read a frame from the input video stream as an image. Read the next frame from the input video stream until the end of the video.
-    frameCounter = 1
     while True:
-        r, im = vidCapture.read()
-
-        if not r or frameCounter >= frameMax:
-            print("Video Finished!")
+        ret, frame = cap.read()
+        if not ret:
             break
 
-        fractionComplete = frameCounter / totalFrames
-        print(f"Frame {frameCounter:.0f} / {totalFrames:.0f} ({fractionComplete * 100:.1f}%)")
-        frameCounter = frameCounter + 1
+        frame_count += 1
+        if frame_count > frame_end:
+            break
+        else:
+            if frame_count < frame_start:
+                print(f"Skipping frame {frame_count}")
+            else:
+                print(f"Processing frame {frame_count}")
+                results = model.predict(source=frame, conf=0.5, iou=0.1)
+                boxes = results[0].boxes
+                if len(boxes) > 0:
+                    closest = closest_box(boxes, last_box_coords)
+                    last_box_coords = closest.xyxy[0].numpy().astype(int)
 
-        # request for the YOLO model to find objects, you can see the documentation on the YOLO model for params
-        results = model.predict(source=im, conf=0.5, iou=0.1)
+                    # Ensure fixed crop dimensions
+                    new_coords = ensure_fixed_crop_dimensions(
+                        last_box_coords, [width, height], crop_width, crop_height
+                    )
 
-        # boxes are coordinates of objects YOLO has found
-        boxes = results[0].boxes
-        
-        # returns the best box - closest to the last one
-        box = closestBox(boxes, lastBoxCoords)
-        
-        # converts the PyTorch Tensor into box coordinates and saves for the next iteration
-        lastBoxCoords = (box.xyxy[0].numpy().astype(int))
+                    [left, top, right, bottom] = new_coords
+                    frame = frame[top:bottom, left:right]
 
-        # Crop the image around the object
-        
-        # since the area YOLO has found for the object depends on the object but not on the cropping area we need to convert the area of the object to the cropping area
-        newCoords = adjustBoxSize(box.xyxy[0].numpy().astype(int), box_width, box_height)
+                out.write(frame)
 
-        # don't allow to get the cropping area go out of video screen edges
-        newCoords = adjustBoundaries(newCoords, [width, height])
-        [box_left, box_top, box_right, box_bottom] = newCoords
-        imCropped = im[box_top:box_bottom, box_left:box_right]  # cropping the image
-
-        # Add the cropped image to the output video stream
-        
-        # writing the cropped image as the new frame into the output video stream
-        outputWriter.write(imCropped)
-
-    # Close input and output video streams
-    vidCapture.release()
-    outputWriter.release()
+    cap.release()
+    out.release()
 
 
 if __name__ == "__main__":
